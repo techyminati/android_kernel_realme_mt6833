@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2021 MediaTek Inc.
+ * Copyright (C) 2019 MediaTek Inc.
  */
 
 #include <linux/bug.h>
@@ -9,9 +9,9 @@
 #include <linux/platform_device.h>
 #include <asm-generic/io.h>
 
-#include "devapc-mt6877.h"
+#include "devapc-mt6873.h"
 
-static struct mtk_device_num mtk6877_devices_num[] = {
+static struct mtk_device_num mtk6873_devices_num[] = {
 	{SLAVE_TYPE_INFRA, VIO_SLAVE_NUM_INFRA},
 	{SLAVE_TYPE_PERI, VIO_SLAVE_NUM_PERI},
 	{SLAVE_TYPE_PERI2, VIO_SLAVE_NUM_PERI2},
@@ -19,56 +19,59 @@ static struct mtk_device_num mtk6877_devices_num[] = {
 };
 
 static struct PERIAXI_ID_INFO peri_mi_id_to_master[] = {
-	{"THERM",        { 0, 1, 1 } },
+	{"THERM2",       { 0, 0, 0 } },
 	{"SPM",          { 0, 1, 0 } },
 	{"CCU",          { 0, 0, 1 } },
-	{"THERM2",       { 0, 0, 0 } },
-	{"SPM",          { 1, 2, 2 } },
+	{"THERM",        { 0, 1, 1 } },
+	{"SPM_DRAMC",    { 1, 1, 0 } },
 };
 
 static struct INFRAAXI_ID_INFO infra_mi_id_to_master[] = {
-	{"CONNSYS",           { 0, 0, 0, 0,	2, 2, 2, 2,	2, 2, 2, 2,	2, 2 } },
+	{"CONNSYS_WFDMA",     { 0, 0, 0, 0,	0, 0, 0, 0,	0, 0, 0, 0,	0, 0 } },
+	{"CONNSYS_ICAP",      { 0, 0, 0, 0,	1, 0, 0, 0,	0, 0, 0, 0,	0, 0 } },
+	{"CONNSYS_MCU_SYS",   { 0, 0, 0, 0,	0, 1, 0, 0,	0, 0, 0, 0,	0, 0 } },
+	{"CONNSYS_GPS",       { 0, 0, 0, 0,	1, 1, 0, 0,	0, 0, 0, 0,	0, 0 } },
 	{"Tinysys",           { 0, 1, 0, 0,	2, 2, 2, 2,	2, 2, 0, 0,	0, 0 } },
 	{"CQ_DMA",            { 0, 0, 1, 0,	0, 0, 0, 2,	2, 2, 0, 0,	0, 0 } },
 	{"DebugTop",          { 0, 0, 1, 0,	1, 0, 0, 2,	0, 0, 0, 0,	0, 0 } },
-	{"IPU",               { 0, 0, 1, 0,	0, 1, 0, 0,	0, 0, 2, 2,	0, 0 } },
-	{"SSUSB",             { 0, 0, 1, 0,	0, 1, 0, 1,	0, 0, 0, 0,	2, 2 } },
-	{"SSUSB2",            { 0, 0, 1, 0,	0, 1, 0, 1,	0, 0, 1, 0,	2, 2 } },
-	{"SPI6",              { 0, 0, 1, 0,	0, 1, 0, 1,	0, 0, 0, 1,	2, 2 } },
-	{"SPI0",              { 0, 0, 1, 0,	0, 1, 0, 1,	0, 0, 0, 1,	2, 2 } },
-	{"MSDC1",             { 0, 0, 1, 0,	0, 1, 0, 1,	0, 0, 0, 1,	2, 2 } },
-	{"PWM",               { 0, 0, 1, 0,	0, 1, 0, 1,	0, 0, 0, 1,	2, 2 } },
-	{"HWCCF",             { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 0, 0,	2, 2 } },
-	{"MSDC0",             { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 1, 0,	2, 2 } },
-	{"SPI5",              { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 0, 1,	2, 2 } },
-	{"SPI4",              { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 0, 1,	2, 2 } },
-	{"SPI3",              { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 0, 1,	2, 2 } },
-	{"SPI2",              { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 0, 1,	2, 2 } },
-	{"SPI7",              { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 1, 1,	2, 2 } },
-	{"SPI1",              { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 1, 1,	2, 2 } },
-	{"Audio",             { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 1, 1,	2, 2 } },
-	{"AP_DMA_EXT",        { 0, 0, 1, 0,	0, 1, 0, 1,	1, 0, 2, 2,	2, 0 } },
-	{"THERM",             { 0, 0, 1, 0,	0, 1, 0, 0,	0, 1, 2, 2,	0, 0 } },
-	{"SPM",               { 0, 0, 1, 0,	0, 1, 0, 0,	0, 1, 2, 2,	0, 0 } },
-	{"CCU",               { 0, 0, 1, 0,	0, 1, 0, 0,	0, 1, 2, 2,	0, 0 } },
-	{"THERM2",            { 0, 0, 1, 0,	0, 1, 0, 0,	0, 1, 2, 2,	0, 0 } },
+	{"SSUSB",             { 0, 0, 1, 0,	0, 1, 0, 0,	0, 0, 0, 0,	2, 0 } },
+	{"SSUSB2",            { 0, 0, 1, 0,	0, 1, 0, 0,	0, 0, 1, 0,	2, 0 } },
+	{"NOR",               { 0, 0, 1, 0,	0, 1, 0, 0,	0, 0, 0, 1,	2, 0 } },
+	{"PWM",               { 0, 0, 1, 0,	0, 1, 0, 0,	0, 0, 1, 1,	0, 0 } },
+	{"SPI6",              { 0, 0, 1, 0,	0, 1, 0, 0,	0, 0, 1, 1,	0, 0 } },
+	{"SPI0",              { 0, 0, 1, 0,	0, 1, 0, 0,	0, 0, 1, 1,	1, 0 } },
+	{"APU",               { 0, 0, 1, 0,	0, 1, 0, 1,	0, 0, 2, 2,	0, 0 } },
+	{"SPI2",              { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 0, 0,	0, 0 } },
+	{"SPI3",              { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 1, 0,	0, 0 } },
+	{"SPI4",              { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 0, 1,	0, 0 } },
+	{"SPI5",              { 0, 0, 1, 0,	0, 1, 0, 0,	1, 0, 1, 1,	0, 0 } },
+	{"SPI7",              { 0, 0, 1, 0,	0, 1, 0, 1,	1, 0, 0, 0,	0, 0 } },
+	{"Audio",             { 0, 0, 1, 0,	0, 1, 0, 1,	1, 0, 0, 1,	0, 0 } },
+	{"SPI1",              { 0, 0, 1, 0,	0, 1, 0, 1,	1, 0, 1, 1,	0, 0 } },
+	{"AP_DMA_EXT",        { 0, 0, 1, 0,	0, 1, 0, 0,	0, 1, 2, 2,	2, 0 } },
+	{"THERM2",            { 0, 0, 1, 0,	0, 1, 0, 1,	0, 1, 0, 0,	0, 0 } },
+	{"SPM",               { 0, 0, 1, 0,	0, 1, 0, 1,	0, 1, 1, 0,	0, 0 } },
+	{"CCU",               { 0, 0, 1, 0,	0, 1, 0, 1,	0, 1, 0, 1,	0, 0 } },
+	{"THERM",             { 0, 0, 1, 0,	0, 1, 0, 1,	0, 1, 1, 1,	0, 0 } },
 	{"DX_CC",             { 0, 0, 1, 0,	1, 1, 0, 2,	2, 2, 2, 0,	0, 0 } },
 	{"GCE",               { 0, 0, 1, 0,	0, 0, 1, 2,	2, 0, 0, 0,	0, 0 } },
-	{"CPUEB",             { 0, 0, 1, 0,	1, 0, 1, 2,	2, 2, 2, 2,	2, 0 } },
+	{"PCIE",              { 0, 0, 1, 0,	0, 1, 1, 2,	2, 2, 2, 2,	0, 0 } },
 	{"DPMAIF",            { 0, 1, 1, 0,	2, 2, 2, 2,	0, 0, 0, 0,	0, 0 } },
-	{"SCP_SSPM",          { 0, 0, 0, 1,	2, 2, 0, 0,	0, 0, 0, 0,	0, 0 } },
-	{"UFS",               { 0, 1, 0, 1,	2, 2, 0, 0,	0, 0, 0, 0,	0, 0 } },
-	{"CPUEB_2",           { 0, 0, 1, 1,	2, 2, 2, 2,	2, 2, 0, 0,	0, 0 } },
-	{"MFG_M0_M",          { 0, 1, 1, 1,	2, 2, 2, 2,	2, 2, 2, 0,	0, 0 } },
-	{"APMCU_Write",       { 1, 2, 2, 2,	2, 0, 0, 0,	0, 0, 0, 0,	0, 0 } },
-	{"APMCU_Write",       { 1, 2, 2, 2,	2, 0, 0, 1,	0, 0, 0, 0,	0, 0 } },
-	{"APMCU_Write",       { 1, 2, 2, 2,	2, 2, 2, 2,	2, 1, 0, 0,	0, 0 } },
-	{"APMCU_Read",        { 1, 2, 2, 2,	2, 0, 0, 0,	0, 0, 0, 0,	0, 0 } },
-	{"APMCU_Read",        { 1, 2, 2, 2,	2, 0, 0, 1,	0, 0, 0, 0,	0, 0 } },
-	{"APMCU_Read",        { 1, 2, 0, 0,	0, 0, 0, 0,	1, 0, 0, 0,	0, 0 } },
-	{"APMCU_Read",        { 1, 2, 1, 0,	0, 0, 0, 0,	1, 0, 0, 0,	0, 0 } },
-	{"APMCU_Read",        { 1, 2, 2, 2,	2, 2, 2, 2,	2, 1, 0, 0,	0, 0 } },
-	{"APMCU_Read",        { 1, 2, 2, 2,	2, 2, 2, 2,	2, 2, 1, 0,	0, 0 } },
+	{"SSPM",              { 0, 0, 0, 1,	2, 2, 2, 0,	0, 0, 0, 0,	0, 0 } },
+	{"UFS",               { 0, 1, 0, 1,	0, 2, 2, 0,	0, 0, 0, 0,	0, 0 } },
+	{"MSDC0",             { 0, 1, 0, 1,	1, 0, 0, 0,	0, 0, 0, 0,	0, 0 } },
+	{"MSDC1",             { 0, 1, 0, 1,	1, 1, 0, 0,	0, 0, 0, 0,	0, 0 } },
+	{"MSDC2",             { 0, 1, 0, 1,	1, 1, 1, 0,	0, 0, 0, 0,	0, 0 } },
+	{"CPUEB",             { 0, 0, 1, 1,	2, 2, 2, 2,	2, 2, 0, 0,	0, 0 } },
+	{"APMCU_write",       { 1, 2, 2, 2,	2, 0, 0, 0,	0, 0, 0, 0,	0, 0 } },
+	{"APMCU_write",       { 1, 2, 2, 2,	2, 0, 0, 1,	0, 0, 0, 0,	0, 0 } },
+	{"APMCU_write",       { 1, 2, 2, 2,	2, 2, 2, 2,	2, 1, 0, 0,	0, 0 } },
+	{"APMCU_read",        { 1, 2, 2, 2,	2, 0, 0, 0,	0, 0, 0, 0,	0, 0 } },
+	{"APMCU_read",        { 1, 2, 2, 2,	2, 0, 0, 1,	0, 0, 0, 0,	0, 0 } },
+	{"APMCU_read",        { 1, 2, 0, 0,	0, 0, 0, 0,	1, 0, 0, 0,	0, 0 } },
+	{"APMCU_read",        { 1, 2, 1, 0,	0, 0, 0, 0,	1, 0, 0, 0,	0, 0 } },
+	{"APMCU_read",        { 1, 2, 2, 2,	2, 2, 2, 2,	2, 1, 0, 0,	0, 0 } },
+	{"APMCU_read",        { 1, 2, 2, 2,	2, 2, 2, 2,	2, 2, 1, 0,	0, 0 } },
 };
 
 static const char *infra_mi_trans(uint32_t bus_id)
@@ -134,16 +137,18 @@ static const char *peri_mi_trans(uint32_t bus_id)
 	return master;
 }
 
-static const char *mt6877_bus_id_to_master(uint32_t bus_id, uint32_t vio_addr,
+static const char *mt6873_bus_id_to_master(uint32_t bus_id, uint32_t vio_addr,
 		int slave_type, int shift_sta_bit, int domain)
 {
-	const char *err_master = "UNKNOWN_MASTER";
 	uint8_t h_1byte;
 
-	pr_debug(PFX "%s:0x%x, %s:0x%x, %s:0x%x, %s:%d\n",
+	pr_debug(PFX "[DEVAPC] %s:0x%x, %s:0x%x, %s:0x%x, %s:%d\n",
 		"bus_id", bus_id, "vio_addr", vio_addr,
 		"slave_type", slave_type,
 		"shift_sta_bit", shift_sta_bit);
+
+	if (bus_id == 0x0 && vio_addr == 0x0)
+		return NULL;
 
 	h_1byte = (vio_addr >> 24) & 0xFF;
 
@@ -165,34 +170,42 @@ static const char *mt6877_bus_id_to_master(uint32_t bus_id, uint32_t vio_addr,
 			return "ADSP";
 	}
 
-
 	if (slave_type == SLAVE_TYPE_INFRA) {
-		if (vio_addr <= 0x1FFFFF || shift_sta_bit == 7) {
+		if (vio_addr <= 0x1FFFFF) {
 			pr_info(PFX "vio_addr is from on-chip SRAMROM\n");
 			if ((bus_id & 0x1) == 0)
 				return "EMI_L2C_M";
 
 			return infra_mi_trans(bus_id >> 1);
 
-		} else if (shift_sta_bit >= 0 && shift_sta_bit <= 3) {
-			return peri_mi_trans(bus_id);
+		} else if (shift_sta_bit == 3) {
+			if ((bus_id & 0x1) == 0)
+				return "EMI_L2C_M";
 
-		} else if (shift_sta_bit >= 4 && shift_sta_bit <= 6) {
-			return infra_mi_trans(bus_id);
+			return infra_mi_trans(bus_id >> 1);
 
-		} else if (shift_sta_bit == 8) {
-			pr_info(PFX "vio_addr is from MMSYS_MALI\n");
+		} else if (shift_sta_bit == 4) {
 			if ((bus_id & 0x1) == 1)
 				return "GCE_M";
 
 			return infra_mi_trans(bus_id >> 1);
 		}
 
-		return err_master;
+		return infra_mi_trans(bus_id);
 
 	} else if (slave_type == SLAVE_TYPE_PERI) {
-		if (shift_sta_bit == 1 || shift_sta_bit == 2 ||
-				shift_sta_bit == 5) {
+		if ((h_1byte >= 0x14 && h_1byte < 0x18) ||
+				(h_1byte >= 0x1A && h_1byte < 0x1C) ||
+				(h_1byte >= 0x1F && h_1byte < 0x20)) {
+			pr_info(PFX "vio addr is from MM 2nd\n");
+			if ((bus_id & 0x1) == 1)
+				return "GCE_M";
+
+			return infra_mi_trans(bus_id >> 1);
+		}
+
+		if (shift_sta_bit == 3 || shift_sta_bit == 4 ||
+				shift_sta_bit == 8) {
 			if ((bus_id & 0x1) == 0)
 				return "MD_AP_M";
 
@@ -208,7 +221,7 @@ static const char *mt6877_bus_id_to_master(uint32_t bus_id, uint32_t vio_addr,
 
 	}
 
-	return err_master;
+	return "UNKNOWN_MASTER";
 }
 
 /* violation index corresponds to subsys */
@@ -225,29 +238,29 @@ const char *index_to_subsys(int slave_type, uint32_t vio_index,
 	if (slave_type == SLAVE_TYPE_INFRA &&
 			vio_index < VIO_SLAVE_NUM_INFRA) {
 		for (i = 0; i < VIO_SLAVE_NUM_INFRA; i++) {
-			if (vio_index == mt6877_devices_infra[i].vio_index)
-				return mt6877_devices_infra[i].device;
+			if (vio_index == mt6873_devices_infra[i].vio_index)
+				return mt6873_devices_infra[i].device;
 		}
 
 	} else if (slave_type == SLAVE_TYPE_PERI &&
 			vio_index < VIO_SLAVE_NUM_PERI)
 		for (i = 0; i < VIO_SLAVE_NUM_PERI; i++) {
-			if (vio_index == mt6877_devices_peri[i].vio_index)
-				return mt6877_devices_peri[i].device;
+			if (vio_index == mt6873_devices_peri[i].vio_index)
+				return mt6873_devices_peri[i].device;
 		}
 
 	else if (slave_type == SLAVE_TYPE_PERI2 &&
 			vio_index < VIO_SLAVE_NUM_PERI2)
 		for (i = 0; i < VIO_SLAVE_NUM_PERI2; i++) {
-			if (vio_index == mt6877_devices_peri2[i].vio_index)
-				return mt6877_devices_peri2[i].device;
+			if (vio_index == mt6873_devices_peri2[i].vio_index)
+				return mt6873_devices_peri2[i].device;
 		}
 
 	else if (slave_type == SLAVE_TYPE_PERI_PAR &&
 			vio_index < VIO_SLAVE_NUM_PERI_PAR)
 		for (i = 0; i < VIO_SLAVE_NUM_PERI_PAR; i++) {
-			if (vio_index == mt6877_devices_peri_par[i].vio_index)
-				return mt6877_devices_peri_par[i].device;
+			if (vio_index == mt6873_devices_peri_par[i].vio_index)
+				return mt6873_devices_peri_par[i].device;
 		}
 
 	return "OUT_OF_BOUND";
@@ -274,13 +287,15 @@ static void mm2nd_vio_handler(void __iomem *infracfg,
 		vio_sta_num = INFRACFG_MDP_VIO_STA_NUM;
 		vio0_offset = INFRACFG_MDP_SEC_VIO0_OFFSET;
 
-		strncpy(mm_str, "INFRACFG_MDP_SEC_VIO", sizeof(mm_str));
+		strncpy(mm_str, "INFRACFG_MDP_SEC_VIO",
+				sizeof("INFRACFG_MDP_SEC_VIO"));
 
 	} else if (mmsys_vio) {
 		vio_sta_num = INFRACFG_MM_VIO_STA_NUM;
 		vio0_offset = INFRACFG_MM_SEC_VIO0_OFFSET;
 
-		strncpy(mm_str, "INFRACFG_MM_SEC_VIO", sizeof(mm_str));
+		strncpy(mm_str, "INFRACFG_MM_SEC_VIO",
+				sizeof("INFRACFG_MM_SEC_VIO"));
 
 	} else {
 		pr_err(PFX "%s: param check failed, %s:%s, %s:%s, %s:%s\n",
@@ -320,161 +335,141 @@ static void mm2nd_vio_handler(void __iomem *infracfg,
 	vio_info->write = (rw == 1);
 }
 
-static uint32_t mt6877_shift_group_get(int slave_type, uint32_t vio_idx)
+static uint32_t mt6873_shift_group_get(int slave_type, uint32_t vio_idx)
 {
 	if (slave_type == SLAVE_TYPE_INFRA) {
-		if (vio_idx <= 3)
+		if ((vio_idx >= 0 && vio_idx <= 8) || vio_idx == 355)
 			return 0;
-		else if (vio_idx >= 4 && vio_idx <= 5)
+		else if ((vio_idx >= 9 && vio_idx <= 14) || vio_idx == 356)
 			return 1;
-		else if ((vio_idx >= 6 && vio_idx <= 31) ||
-			 (vio_idx >= 416 && vio_idx <= 442) ||
-			 vio_idx == 462)
+		else if ((vio_idx >= 15 && vio_idx <= 19) || vio_idx == 357)
 			return 2;
-		else if ((vio_idx >= 32 && vio_idx <= 45) ||
-			 (vio_idx >= 443 && vio_idx <= 457) ||
-			 vio_idx == 463)
+		else if ((vio_idx >= 20 && vio_idx <= 21) || vio_idx == 358)
 			return 3;
-		else if ((vio_idx >= 46 && vio_idx <= 74) ||
-			vio_idx == 458)
+		else if (vio_idx >= 22 && vio_idx <= 347)
 			return 4;
-		else if ((vio_idx >= 75 && vio_idx <= 82) ||
-			vio_idx == 459)
+		else if ((vio_idx >= 348 && vio_idx <= 354) ||
+				(vio_idx >= 359 && vio_idx <= 365) ||
+				vio_idx == 366)
 			return 5;
-		else if ((vio_idx >= 83 && vio_idx <= 87) ||
-			vio_idx == 460)
-			return 6;
-		else if ((vio_idx >= 88 && vio_idx <= 90) ||
-			vio_idx == 461)
-			return 7;
-		else if (vio_idx >= 91 && vio_idx <= 415)
-			return 8;
 
 		pr_err(PFX "%s:%d Wrong vio_idx:0x%x\n",
 				__func__, __LINE__, vio_idx);
 
 	} else if (slave_type == SLAVE_TYPE_PERI) {
-		if ((vio_idx <= 2) ||
-		    (vio_idx >= 125 && vio_idx <= 128) ||
-		    vio_idx == 175)
+		if (vio_idx >= 0 && vio_idx <= 4)
 			return 0;
-		else if ((vio_idx >= 3 && vio_idx <= 25) ||
-			vio_idx == 129)
+		else if (vio_idx >= 5 && vio_idx <= 6)
 			return 1;
-		else if ((vio_idx >= 26 && vio_idx <= 36) ||
-			vio_idx == 130)
+		else if ((vio_idx >= 7 && vio_idx <= 38) || vio_idx == 187 ||
+				(vio_idx >= 188 && vio_idx <= 219) ||
+				vio_idx == 286)
 			return 2;
-		else if ((vio_idx >= 37 && vio_idx <= 38) ||
-			vio_idx == 131)
+		else if ((vio_idx >= 39 && vio_idx <= 61) || vio_idx == 220)
 			return 3;
-		else if ((vio_idx >= 39 && vio_idx <= 81) ||
-			vio_idx == 132)
+		else if ((vio_idx >= 62 && vio_idx <= 72) || vio_idx == 221)
 			return 4;
-		else if ((vio_idx >= 82 && vio_idx <= 84) ||
-			vio_idx == 133)
+		else if ((vio_idx >= 73 && vio_idx <= 74) || vio_idx == 222)
 			return 5;
-		else if (vio_idx == 85 ||
-			(vio_idx >= 134 && vio_idx <= 135) ||
-			vio_idx == 176)
+		else if (vio_idx == 75 || vio_idx == 223)
 			return 6;
-		else if (vio_idx >= 86 && vio_idx <= 87)
+		else if ((vio_idx >= 76 && vio_idx <= 118) || vio_idx == 224)
 			return 7;
-		else if ((vio_idx >= 88 && vio_idx <= 97) ||
-			(vio_idx >= 136 && vio_idx <= 145) ||
-			vio_idx == 177)
+		else if ((vio_idx >= 119 && vio_idx <= 121) || vio_idx == 225)
 			return 8;
-		else if ((vio_idx >= 98 && vio_idx <= 112) ||
-			(vio_idx >= 146 && vio_idx <= 161) ||
-			vio_idx == 178)
+		if (vio_idx >= 122 && vio_idx <= 125)
 			return 9;
-		else if ((vio_idx >= 113 && vio_idx <= 124) ||
-			(vio_idx >= 162 && vio_idx <= 174) ||
-			vio_idx == 179)
+		else if (vio_idx == 126 || (vio_idx >= 226 && vio_idx <= 227) ||
+				vio_idx == 287)
 			return 10;
+		if (vio_idx >= 127 && vio_idx <= 128)
+			return 11;
+		if (vio_idx >= 129 && vio_idx <= 130)
+			return 12;
+		else if ((vio_idx >= 131 && vio_idx <= 141) ||
+				(vio_idx >= 228 && vio_idx <= 238) ||
+				vio_idx == 288)
+			return 13;
+		else if ((vio_idx >= 142 && vio_idx <= 143) ||
+				(vio_idx >= 239 && vio_idx <= 240) ||
+				vio_idx == 289)
+			return 14;
+		else if ((vio_idx >= 144 && vio_idx <= 173) || vio_idx == 241 ||
+				(vio_idx >= 242 && vio_idx <= 271) ||
+				vio_idx == 290)
+			return 15;
+		else if ((vio_idx >= 174 && vio_idx <= 186) || vio_idx == 272 ||
+				(vio_idx >= 273 && vio_idx <= 285) ||
+				vio_idx == 291)
+			return 16;
 
 		pr_err(PFX "%s:%d Wrong vio_idx:0x%x\n",
 				__func__, __LINE__, vio_idx);
 
 	} else if (slave_type == SLAVE_TYPE_PERI2) {
-		if ((vio_idx <= 2) ||
-		    (vio_idx >= 108 && vio_idx <= 111) ||
-		    vio_idx == 216)
+		if ((vio_idx >= 0 && vio_idx <= 12) || vio_idx == 117 ||
+				(vio_idx >= 118 && vio_idx <= 130) ||
+				vio_idx == 234)
 			return 0;
-		else if (vio_idx >= 3 && vio_idx <= 6)
+		else if (vio_idx >= 13 && vio_idx <= 16)
 			return 1;
-		else if (vio_idx >= 7 && vio_idx <= 10)
+		else if (vio_idx >= 17 && vio_idx <= 20)
 			return 2;
-		else if ((vio_idx >= 11 && vio_idx <= 26) ||
-			 (vio_idx >= 112 && vio_idx <= 128) ||
-			 vio_idx == 217)
+		else if ((vio_idx >= 21 && vio_idx <= 36) || vio_idx == 131 ||
+				(vio_idx >= 132 && vio_idx <= 147) ||
+				vio_idx == 235)
 			return 3;
-		else if ((vio_idx >= 27 && vio_idx <= 34) ||
-			 (vio_idx >= 129 && vio_idx <= 137) ||
-			 vio_idx == 218)
+		else if ((vio_idx >= 37 && vio_idx <= 44) || vio_idx == 148 ||
+				(vio_idx >= 149 && vio_idx <= 156) ||
+				vio_idx == 236)
 			return 4;
-		else if ((vio_idx >= 35 && vio_idx <= 50) ||
-			 (vio_idx >= 138 && vio_idx <= 154) ||
-			 vio_idx == 219)
+		else if ((vio_idx >= 45 && vio_idx <= 60) || vio_idx == 157 ||
+				(vio_idx >= 158 && vio_idx <= 173) ||
+				vio_idx == 237)
 			return 5;
-		else if ((vio_idx >= 51 && vio_idx <= 66) ||
-			 (vio_idx >= 155 && vio_idx <= 171) ||
-			 vio_idx == 220)
+		else if ((vio_idx >= 61 && vio_idx <= 76) || vio_idx == 174 ||
+				(vio_idx >= 175 && vio_idx <= 190) ||
+				vio_idx == 238)
 			return 6;
-		else if ((vio_idx >= 67 && vio_idx <= 74) ||
-			 (vio_idx >= 172 && vio_idx <= 180) ||
-			 vio_idx == 221)
+		else if ((vio_idx >= 77 && vio_idx <= 84) || vio_idx == 191 ||
+				(vio_idx >= 192 && vio_idx <= 199) ||
+				vio_idx == 239)
 			return 7;
-		else if ((vio_idx >= 75 && vio_idx <= 94) ||
-			 (vio_idx >= 181 && vio_idx <= 201) ||
-			 vio_idx == 222)
+		else if ((vio_idx >= 85 && vio_idx <= 105) || vio_idx == 200 ||
+				(vio_idx >= 201 && vio_idx <= 221) ||
+				vio_idx == 240)
 			return 8;
-		else if ((vio_idx >= 95 && vio_idx <= 107) ||
-			 (vio_idx >= 202 && vio_idx <= 215) ||
-			 vio_idx == 223)
+		else if ((vio_idx >= 106 && vio_idx <= 116) || vio_idx == 222 ||
+				(vio_idx >= 223 && vio_idx <= 233) ||
+				vio_idx == 241)
 			return 9;
 
 		pr_err(PFX "%s:%d Wrong vio_idx:0x%x\n",
 				__func__, __LINE__, vio_idx);
 
 	} else if (slave_type == SLAVE_TYPE_PERI_PAR) {
-		if (vio_idx <= 3)
+		if ((vio_idx >= 0 && vio_idx <= 23) || vio_idx == 27 ||
+				(vio_idx >= 28 && vio_idx <= 51) ||
+				vio_idx == 56)
 			return 0;
-		else if ((vio_idx >= 4 && vio_idx <= 6) ||
-			 (vio_idx >= 32 && vio_idx <= 34) ||
-			 vio_idx == 62)
+		else if ((vio_idx >= 24 && vio_idx <= 26) || vio_idx == 52 ||
+				(vio_idx >= 53 && vio_idx <= 55) ||
+				vio_idx == 57)
 			return 1;
-		else if ((vio_idx >= 7 && vio_idx <= 28) ||
-			 (vio_idx >= 35 && vio_idx <= 57) ||
-			 vio_idx == 63)
-			return 2;
-		else if ((vio_idx >= 29 && vio_idx <= 31) ||
-			 (vio_idx >= 58 && vio_idx <= 61) ||
-			 vio_idx == 64)
-			return 3;
 
 		pr_err(PFX "%s:%d Wrong vio_idx:0x%x\n",
 				__func__, __LINE__, vio_idx);
 
+	} else {
+		pr_err(PFX "%s:%d Wrong slave_type:0x%x\n",
+				__func__, __LINE__, slave_type);
 	}
-
-	pr_err(PFX "%s:%d Wrong slave_type:0x%x\n",
-			__func__, __LINE__, slave_type);
 
 	return 31;
 }
 
-static struct mtk_devapc_dbg_status mt6877_devapc_dbg_stat = {
-	.enable_ut = PLAT_DBG_UT_DEFAULT,
-	.enable_KE = PLAT_DBG_KE_DEFAULT,
-	.enable_AEE = PLAT_DBG_AEE_DEFAULT,
-	.enable_WARN = PLAT_DBG_WARN_DEFAULT,
-	.enable_dapc = PLAT_DBG_DAPC_DEFAULT,
-};
-
 void devapc_catch_illegal_range(phys_addr_t phys_addr, size_t size)
 {
-	struct mtk_devapc_dbg_status *dbg_stat = &mt6877_devapc_dbg_stat;
-
 	/*
 	 * Catch BROM addr mapped
 	 */
@@ -483,12 +478,18 @@ void devapc_catch_illegal_range(phys_addr_t phys_addr, size_t size)
 				"catch BROM address mapped!",
 				__func__, "phys_addr", &phys_addr,
 				"size", size);
-
-		if (dbg_stat->enable_KE)
-			BUG_ON(1);
+		BUG_ON(1);
 	}
 }
 EXPORT_SYMBOL(devapc_catch_illegal_range);
+
+static struct mtk_devapc_dbg_status mt6873_devapc_dbg_stat = {
+	.enable_ut = PLAT_DBG_UT_DEFAULT,
+	.enable_KE = PLAT_DBG_KE_DEFAULT,
+	.enable_AEE = PLAT_DBG_AEE_DEFAULT,
+	.enable_WARN = PLAT_DBG_WARN_DEFAULT,
+	.enable_dapc = PLAT_DBG_DAPC_DEFAULT,
+};
 
 static const char * const slave_type_to_str[] = {
 	"SLAVE_TYPE_INFRA",
@@ -505,7 +506,7 @@ static int mtk_vio_mask_sta_num[] = {
 	VIO_MASK_STA_NUM_PERI_PAR,
 };
 
-static struct mtk_devapc_vio_info mt6877_devapc_vio_info = {
+static struct mtk_devapc_vio_info mt6873_devapc_vio_info = {
 	.vio_mask_sta_num = mtk_vio_mask_sta_num,
 	.sramrom_vio_idx = SRAMROM_VIO_INDEX,
 	.mdp_vio_idx = MDP_VIO_INDEX,
@@ -515,7 +516,7 @@ static struct mtk_devapc_vio_info mt6877_devapc_vio_info = {
 	.mm2nd_slv_type = MM2ND_SLAVE_TYPE,
 };
 
-static const struct mtk_infra_vio_dbg_desc mt6877_vio_dbgs = {
+static const struct mtk_infra_vio_dbg_desc mt6873_vio_dbgs = {
 	.vio_dbg_mstid = INFRA_VIO_DBG_MSTID,
 	.vio_dbg_mstid_start_bit = INFRA_VIO_DBG_MSTID_START_BIT,
 	.vio_dbg_dmnid = INFRA_VIO_DBG_DMNID,
@@ -528,7 +529,7 @@ static const struct mtk_infra_vio_dbg_desc mt6877_vio_dbgs = {
 	.vio_addr_high_start_bit = INFRA_VIO_ADDR_HIGH_START_BIT,
 };
 
-static const struct mtk_sramrom_sec_vio_desc mt6877_sramrom_sec_vios = {
+static const struct mtk_sramrom_sec_vio_desc mt6873_sramrom_sec_vios = {
 	.vio_id_mask = SRAMROM_SEC_VIO_ID_MASK,
 	.vio_id_shift = SRAMROM_SEC_VIO_ID_SHIFT,
 	.vio_domain_mask = SRAMROM_SEC_VIO_DOMAIN_MASK,
@@ -537,7 +538,7 @@ static const struct mtk_sramrom_sec_vio_desc mt6877_sramrom_sec_vios = {
 	.vio_rw_shift = SRAMROM_SEC_VIO_RW_SHIFT,
 };
 
-static const uint32_t mt6877_devapc_pds[] = {
+static const uint32_t mt6873_devapc_pds[] = {
 	PD_VIO_MASK_OFFSET,
 	PD_VIO_STA_OFFSET,
 	PD_VIO_DBG0_OFFSET,
@@ -549,51 +550,51 @@ static const uint32_t mt6877_devapc_pds[] = {
 	PD_SHIFT_CON_OFFSET,
 };
 
-static struct mtk_devapc_soc mt6877_data = {
-	.dbg_stat = &mt6877_devapc_dbg_stat,
+static struct mtk_devapc_soc mt6873_data = {
+	.dbg_stat = &mt6873_devapc_dbg_stat,
 	.slave_type_arr = slave_type_to_str,
 	.slave_type_num = SLAVE_TYPE_NUM,
-	.device_info[SLAVE_TYPE_INFRA] = mt6877_devices_infra,
-	.device_info[SLAVE_TYPE_PERI] = mt6877_devices_peri,
-	.device_info[SLAVE_TYPE_PERI2] = mt6877_devices_peri2,
-	.device_info[SLAVE_TYPE_PERI_PAR] = mt6877_devices_peri_par,
-	.ndevices = mtk6877_devices_num,
-	.vio_info = &mt6877_devapc_vio_info,
-	.vio_dbgs = &mt6877_vio_dbgs,
-	.sramrom_sec_vios = &mt6877_sramrom_sec_vios,
-	.devapc_pds = mt6877_devapc_pds,
+	.device_info[SLAVE_TYPE_INFRA] = mt6873_devices_infra,
+	.device_info[SLAVE_TYPE_PERI] = mt6873_devices_peri,
+	.device_info[SLAVE_TYPE_PERI2] = mt6873_devices_peri2,
+	.device_info[SLAVE_TYPE_PERI_PAR] = mt6873_devices_peri_par,
+	.ndevices = mtk6873_devices_num,
+	.vio_info = &mt6873_devapc_vio_info,
+	.vio_dbgs = &mt6873_vio_dbgs,
+	.sramrom_sec_vios = &mt6873_sramrom_sec_vios,
+	.devapc_pds = mt6873_devapc_pds,
 	.subsys_get = &index_to_subsys,
-	.master_get = &mt6877_bus_id_to_master,
+	.master_get = &mt6873_bus_id_to_master,
 	.mm2nd_vio_handler = &mm2nd_vio_handler,
-	.shift_group_get = mt6877_shift_group_get,
+	.shift_group_get = mt6873_shift_group_get,
 };
 
-static const struct of_device_id mt6877_devapc_dt_match[] = {
-	{ .compatible = "mediatek,mt6877-devapc" },
+static const struct of_device_id mt6873_devapc_dt_match[] = {
+	{ .compatible = "mediatek,mt6873-devapc" },
 	{},
 };
 
-static int mt6877_devapc_probe(struct platform_device *pdev)
+static int mt6873_devapc_probe(struct platform_device *pdev)
 {
-	return mtk_devapc_probe(pdev, &mt6877_data);
+	return mtk_devapc_probe(pdev, &mt6873_data);
 }
 
-static int mt6877_devapc_remove(struct platform_device *dev)
+static int mt6873_devapc_remove(struct platform_device *dev)
 {
 	return mtk_devapc_remove(dev);
 }
 
-static struct platform_driver mt6877_devapc_driver = {
-	.probe = mt6877_devapc_probe,
-	.remove = mt6877_devapc_remove,
+static struct platform_driver mt6873_devapc_driver = {
+	.probe = mt6873_devapc_probe,
+	.remove = mt6873_devapc_remove,
 	.driver = {
 		.name = KBUILD_MODNAME,
-		.of_match_table = mt6877_devapc_dt_match,
+		.of_match_table = mt6873_devapc_dt_match,
 	},
 };
 
-module_platform_driver(mt6877_devapc_driver);
+module_platform_driver(mt6873_devapc_driver);
 
-MODULE_DESCRIPTION("Mediatek MT6877 Device APC Driver");
-MODULE_AUTHOR("Jackson Chang <jackson-kt.chang@mediatek.com>");
+MODULE_DESCRIPTION("Mediatek MT6873 Device APC Driver");
+MODULE_AUTHOR("Neal Liu <neal.liu@mediatek.com>");
 MODULE_LICENSE("GPL");
