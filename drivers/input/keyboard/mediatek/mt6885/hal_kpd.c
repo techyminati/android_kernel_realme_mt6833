@@ -1,8 +1,7 @@
-/* 
- * SPDX-License-Identifier: GPL-2.0
- *
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
  * Copyright (c) 2019 MediaTek Inc.
- */
+*/
 
 #include <linux/of.h>
 #include <linux/of_address.h>
@@ -21,7 +20,7 @@ static u16 kpd_keymap_state[KPD_NUM_MEMS] = {
 	0xffff, 0xffff, 0xffff, 0xffff, 0x00ff
 };
 
-/* remove for build error
+/*remove for build error
 unsigned int get_boot_mode(void)
 {
 	return 0;
