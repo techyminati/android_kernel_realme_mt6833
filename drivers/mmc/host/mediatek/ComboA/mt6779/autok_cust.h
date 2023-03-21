@@ -1,12 +1,21 @@
-/* SPDX-License-Identifier: GPL-2.0 */
-/*
- * Copyright (C) 2016 MediaTek Inc.
+/* Copyright (C) 2017 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
-
 
 #ifndef _AUTOK_CUST_H_
 #define _AUTOK_CUST_H_
 
+#if !defined(FPGA_PLATFORM)
+#include <mt-plat/mtk_chip.h>
+#endif
 
 #define AUTOK_VERSION                   (0x18110817)
 
@@ -143,7 +152,6 @@ struct AUTOK_PLAT_FUNC {
 	u8 new_path_hs;
 	u8 multi_sync;
 	u8 rx_enhance;
-	u8 r1b_check;
 	u8 ddr50_fix;
 	u8 fifo_1k;
 	u8 latch_enhance;
@@ -154,6 +162,7 @@ struct AUTOK_PLAT_FUNC {
 
 #define get_platform_para_tx(autok_para_tx) \
 	do { \
+		autok_para_tx.chip_hw_ver = mt_get_chip_hw_ver(); \
 		autok_para_tx.msdc0_hs400_clktx = 0; \
 		autok_para_tx.msdc0_hs400_cmdtx = 0; \
 		autok_para_tx.msdc0_hs400_dat0tx = 0; \
@@ -198,6 +207,7 @@ struct AUTOK_PLAT_FUNC {
 
 #define get_platform_para_rx(autok_para_rx) \
 	do { \
+		autok_para_rx.chip_hw_ver = mt_get_chip_hw_ver(); \
 		autok_para_rx.ckgen_val = 0; \
 		autok_para_rx.latch_en_cmd_hs400 = 3; \
 		autok_para_rx.latch_en_crc_hs400 = 3; \
@@ -234,18 +244,19 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_rx.old_stop_sdr104 = 6; \
 		autok_para_rx.old_water_hs = 8; \
 		autok_para_rx.old_stop_hs = 3; \
-		autok_para_rx.read_dat_cnt_hs400 = 7; \
+		autok_para_rx.read_dat_cnt_hs400 = 1; \
 		autok_para_rx.read_dat_cnt_ddr208 = 1; \
-		autok_para_rx.end_bit_chk_cnt_hs400 = 0xE; \
+		autok_para_rx.end_bit_chk_cnt_hs400 = 3; \
 		autok_para_rx.end_bit_chk_cnt_ddr208 = 3; \
-		autok_para_rx.latchck_switch_cnt_hs400 = 6; \
+		autok_para_rx.latchck_switch_cnt_hs400 = 4; \
 		autok_para_rx.latchck_switch_cnt_ddr208 = 5; \
-		autok_para_rx.ds_dly3_hs400 = 0; \
+		autok_para_rx.ds_dly3_hs400 = 20; \
 		autok_para_rx.ds_dly3_ddr208 = 0; \
 	} while (0)
 
 #define get_platform_para_misc(autok_para_misc) \
 	do { \
+		autok_para_misc.chip_hw_ver = mt_get_chip_hw_ver(); \
 		autok_para_misc.latch_ck_emmc_times = 10; \
 		autok_para_misc.latch_ck_sdio_times = 20; \
 		autok_para_misc.latch_ck_sd_times = 20; \
@@ -264,6 +275,7 @@ struct AUTOK_PLAT_FUNC {
  */
 #define get_platform_func(autok_para_func) \
 	do { \
+		autok_para_func.chip_hw_ver = mt_get_chip_hw_ver(); \
 		autok_para_func.new_path_hs400 = 1; \
 		autok_para_func.new_path_hs200 = 1; \
 		autok_para_func.new_path_ddr208 = 1; \
@@ -271,9 +283,6 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_func.new_path_hs = 1; \
 		autok_para_func.multi_sync = 1; \
 		autok_para_func.rx_enhance = 1; \
-		autok_para_func.r1b_check = 1; \
-		autok_para_func.ddr50_fix = 1; \
-		autok_para_func.fifo_1k = 1; \
 		autok_para_func.latch_enhance = 1; \
 		autok_para_func.msdc0_bypass_duty_modify = 1; \
 		autok_para_func.msdc1_bypass_duty_modify = 0; \
@@ -283,10 +292,13 @@ struct AUTOK_PLAT_FUNC {
 #define PORT0_PB0_RD_DAT_SEL_VALID
 #define PORT1_PB0_RD_DAT_SEL_VALID
 #define PORT3_PB0_RD_DAT_SEL_VALID
-#define MMC_QUE_TASK_PARAMS_RD 441
-#define MMC_QUE_TASK_PARAMS_WR 440
+#define MMC_SET_QUEUE_CONTEXT_RD 441
+#define MMC_SET_QUEUE_CONTEXT_WR 440
 #define MMC_SWITCH_CQ_EN 601
 #define MMC_SWITCH_CQ_DIS 600
+
+#define MMC_QUE_TASK_PARAMS_RD MMC_SET_QUEUE_CONTEXT_RD
+#define MMC_QUE_TASK_PARAMS_WR MMC_SET_QUEUE_CONTEXT_WR
 
 /*
  * reg define
@@ -295,22 +307,22 @@ struct AUTOK_PLAT_FUNC {
 #define AUTOK_TOP_SDC_RX_ENHANCE_EN (0x1 << 15) /* RW */
 
 /**********************************************************
- * Feature  Control Defination                            *
+ * Feature  Control Defination                             *
  **********************************************************/
-#define AUTOK_EMMC_OFFLINE_TUNE_TX_ENABLE       0
-#define AUTOK_SD_CARD_OFFLINE_TUNE_TX_ENABLE    0
-#define AUTOK_SDIO_OFFLINE_TUNE_TX_ENABLE       1
-#define AUTOK_OFFLINE_CMD_H_TX_ENABLE           0
-#define AUTOK_OFFLINE_DAT_H_TX_ENABLE           1
-#define AUTOK_OFFLINE_CMD_D_RX_ENABLE           0
-#define AUTOK_OFFLINE_DAT_D_RX_ENABLE           1
-#define AUTOK_OFFLINE_TUNE_DEVICE_RX_ENABLE     1
-#define AUTOK_PARAM_DUMP_ENABLE                 0
-#define SINGLE_EDGE_ONLINE_TUNE                 0
-#define SDIO_PLUS_CMD_TUNE                      1
-#define STOP_CLK_NEW_PATH                       0
-#define DS_DLY3_SCAN                            0
-#define CHIP_DENALI_3_DAT_TUNE                  0
+#define AUTOK_EMMC_OFFLINE_TUNE_TX_ENABLE 0
+#define AUTOK_SD_CARD_OFFLINE_TUNE_TX_ENABLE 0
+#define AUTOK_SDIO_OFFLINE_TUNE_TX_ENABLE 1
+#define AUTOK_OFFLINE_CMD_H_TX_ENABLE 0
+#define AUTOK_OFFLINE_DAT_H_TX_ENABLE 1
+#define AUTOK_OFFLINE_CMD_D_RX_ENABLE 0
+#define AUTOK_OFFLINE_DAT_D_RX_ENABLE 1
+#define AUTOK_OFFLINE_TUNE_DEVICE_RX_ENABLE 1
+#define AUTOK_PARAM_DUMP_ENABLE   0
+#define SINGLE_EDGE_ONLINE_TUNE   0
+#define SDIO_PLUS_CMD_TUNE        1
+#define STOP_CLK_NEW_PATH         0
+#define DS_DLY3_SCAN              0
+#define CHIP_DENALI_3_DAT_TUNE    0
 
 #endif /* _AUTOK_CUST_H_ */
 

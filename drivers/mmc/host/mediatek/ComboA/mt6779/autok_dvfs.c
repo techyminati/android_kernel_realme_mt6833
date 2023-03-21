@@ -1,8 +1,15 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
-
 
 #include <asm/segment.h>
 #include <linux/uaccess.h>
@@ -14,9 +21,6 @@
 #include "mtk_sd.h"
 #include "dbg.h"
 #include <mmc/core/sdio_ops.h>
-#include <mmc/core/core.h>
-#include <mmc/core/mmc_ops.h>
-#include <mmc/core/card.h>
 
 static char const * const sdio_autok_res_path[] = {
 	"/data/sdio_autok_0", "/data/sdio_autok_1",
@@ -68,7 +72,7 @@ static int msdc_file_read(struct file *file, unsigned long long offset,
 }
 
 static int msdc_file_write(struct file *file, unsigned long long offset,
-	unsigned char *data, unsigned int size)
+				unsigned char *data, unsigned int size)
 {
 	int ret = 0;
 #ifdef SDIO_HQA
@@ -420,11 +424,15 @@ void sdio_autok_wait_dvfs_ready(void)
 int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 {
 	int ret = 0;
-	int vcore = 0;
 	u8 *res;
 
-	res = host->autok_res[vcore];
-
+	/* For SD, HW_DVFS is always not feasible because:
+	 * 1. SD insertion can be performed at anytime
+	 * 2. Lock vcore at low vcore is not allowed after booting
+	 * Therefore, SD autok is performed on one vcore, current vcore.
+	 * We always store autok result at host->autok_res[0].
+	 */
+	res = host->autok_res[0];
 	if (host->mmc->ios.timing == MMC_TIMING_UHS_SDR104 ||
 	    host->mmc->ios.timing == MMC_TIMING_UHS_SDR50) {
 		if (host->is_autok_done == 0) {
@@ -436,6 +444,10 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 			autok_tuning_parameter_init(host, res);
 		}
 	}
+
+	/* Enable this line if SD use HW DVFS */
+	/* msdc_set_hw_dvfs(vcore, host); */
+	/* msdc_dump_register_core(host, */
 
 	return ret;
 }
@@ -840,7 +852,6 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 #if defined(VCOREFS_READY)
 static int autok_opp[AUTOK_VCORE_NUM] = {
 	VCORE_DVFS_OPP_2, /* 0.825V, OPP_0 is invalid */
-
 	VCORE_DVFS_OPP_6, /* 0.725V */
 	VCORE_DVFS_OPP_9, /* 0.65V */
 };
@@ -883,7 +894,6 @@ static int emmc_autok_switch_cqe(struct msdc_host *host, bool enable)
  * the function before mmcblk0 inited + 3s,
  * otherwise will fail because of entering runtime
  * supsend.
- * invoked by SPM
  */
 int emmc_autok(void)
 {
@@ -927,7 +937,7 @@ int emmc_autok(void)
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
 		pm_qos_update_request(&autok_force, autok_opp[i]);
-		/* vcore = 0.51875V + 6.25mV * vcore_step2 */
+		/* vcore = 0.4V + 6.25mV * vcore_step2 */
 		vcore_step2 = pmic_get_register_value(PMIC_RG_BUCK_VCORE_VOSEL);
 		pr_notice("msdc fix vcore, PMIC_RG_BUCK_VCORE_VOSEL: %d\n",
 			vcore_step2);
@@ -942,7 +952,7 @@ int emmc_autok(void)
 			if (host->use_hw_dvfs == 0)
 				memcpy(host->autok_res[i],
 					host->autok_res[AUTOK_VCORE_MERGE],
-						TUNING_PARA_SCAN_COUNT);
+					TUNING_PARA_SCAN_COUNT);
 		}
 		vcore_step1 = vcore_step2;
 	}
@@ -975,6 +985,7 @@ int emmc_autok(void)
 	}
 
 	pm_qos_remove_request(&autok_force);
+
 #ifdef CONFIG_MTK_EMMC_HW_CQ
 	if (emmc_autok_switch_cqe(host, 1))
 		pr_notice("WARN:%s:cqe enable fail", __func__);

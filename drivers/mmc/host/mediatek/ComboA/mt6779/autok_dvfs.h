@@ -1,16 +1,23 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
-
 
 #ifndef _AUTOK_DVFS_H_
 #define _AUTOK_DVFS_H_
 #include "msdc_cust.h"
-
 #include "autok.h"
 
-/*#define VCOREFS_READY */
+//#define VCOREFS_READY
+
 #if defined(VCOREFS_READY)
 #include <linux/pm_qos.h>
 #include "helio-dvfsrc-opp.h"
@@ -20,7 +27,6 @@ enum AUTOK_VCORE {
 	AUTOK_VCORE_LEVEL0 = 0,
 	AUTOK_VCORE_LEVEL1,
 	AUTOK_VCORE_LEVEL2,
-	AUTOK_VCORE_LEVEL3,
 	AUTOK_VCORE_MERGE,
 	AUTOK_VCORE_NUM = AUTOK_VCORE_MERGE
 };

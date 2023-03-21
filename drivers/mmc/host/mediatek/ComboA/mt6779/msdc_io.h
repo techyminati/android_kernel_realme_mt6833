@@ -1,6 +1,14 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #ifndef _MSDC_IO_H_
@@ -23,27 +31,29 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc);
 /**************************************************************/
 /* Section 2: Power                                           */
 /**************************************************************/
-void msdc_sd_power_switch(struct msdc_host *host, u32 on);
+int msdc_sd_power_switch(struct msdc_host *host, u32 on);
 void msdc_set_host_power_control(struct msdc_host *host);
-void msdc_pmic_force_vcore_pwm(bool enable);
-void msdc_sd_power_off(void);
 
 #if !defined(FPGA_PLATFORM)
+void msdc_pmic_force_vcore_pwm(bool enable);
 int msdc_oc_check(struct msdc_host *host, u32 en);
 int msdc_io_check(struct msdc_host *host);
+void msdc_sd_power_off(void);
 void msdc_dump_ldo_sts(char **buff, unsigned long *size,
 	struct seq_file *m, struct msdc_host *host);
 void msdc_HQA_set_voltage(struct msdc_host *host);
 
 #else
 #define msdc_power_calibration_init(host)
+#define msdc_pmic_force_vcore_pwm(enable)
 void msdc_fpga_pwr_init(void);
-#define msdc_oc_check(msdc_host, en)	(0)
+#define msdc_oc_check(msdc_host, en)    (0)
 #define msdc_io_check(msdc_host)        (1)
 extern void msdc_fpga_power(struct msdc_host *host, u32 on);
 #define msdc_emmc_power                 msdc_fpga_power
 #define msdc_sd_power                   msdc_fpga_power
 #define msdc_sdio_power                 msdc_fpga_power
+#define msdc_sd_power_off()
 #define msdc_dump_ldo_sts(buff, size, m, host)
 
 #endif
@@ -89,27 +99,9 @@ void msdc_dump_clock_sts(char **buff, unsigned long *size,
 		if (host->hclk_ctl) \
 			clk_disable(host->hclk_ctl); \
 	} while (0)
-#define msdc_clk_prepare_enable(host) \
-	do { \
-		(void)clk_prepare_enable(host->clk_ctl); \
-		if (host->aes_clk_ctl) \
-			(void)clk_prepare_enable(host->aes_clk_ctl); \
-		if (host->hclk_ctl) \
-			(void)clk_prepare_enable(host->hclk_ctl); \
-	} while (0)
-#define msdc_clk_disable_unprepare(host) \
-	do { \
-		clk_disable_unprepare(host->clk_ctl); \
-		if (host->aes_clk_ctl) \
-			clk_disable_unprepare(host->aes_clk_ctl); \
-		if (host->hclk_ctl) \
-			clk_disable_unprepare(host->hclk_ctl); \
-	} while (0)
 #else
 #define msdc_clk_enable(host)
 #define msdc_clk_disable(host)
-#define msdc_clk_prepare_enable(host)
-#define msdc_clk_disable_unprepare(host)
 #endif
 
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,

@@ -1,8 +1,15 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
-
 
 #ifdef pr_fmt
 #undef pr_fmt
@@ -11,13 +18,16 @@
 #define pr_fmt(fmt) "["KBUILD_MODNAME"]" fmt
 #include <linux/io.h>
 #include "mtk_sd.h"
-#include <mt-plat/mtk_boot.h>
 
-#define FPGA_PWR_GPIO                   (0x10001E84)
-#define FPGA_PWR_GPIO_EO                (0x10001E88)
+/*#define USE_FPGA_PWR_GPIO_CTRL*/
 
+#define FPGA_PWR_GPIO                   (0xF0000E84)
+#define FPGA_PWR_GPIO_EO                (0xF0000E88)
+
+#ifdef USE_FPGA_PWR_GPIO_CTRL
 static void __iomem *fpga_pwr_gpio;
 static void __iomem *fpga_pwr_gpio_eo;
+#endif
 
 #define PWR_GPIO                         (fpga_pwr_gpio)
 #define PWR_GPIO_EO                      (fpga_pwr_gpio_eo)
@@ -28,6 +38,7 @@ static void __iomem *fpga_pwr_gpio_eo;
 #define PWR_MASK_CARD_MASK               (~(1 << 8))
 #define PWR_MASK_VOL_18_MASK             (~(1 << 9))
 
+#ifdef USE_FPGA_PWR_GPIO_CTRL
 void msdc_set_pwr_gpio_dir(void __iomem *fpga_pwr_gpio,
 	void __iomem *fpga_pwr_gpio_eo)
 {
@@ -42,9 +53,11 @@ void msdc_set_pwr_gpio_dir(void __iomem *fpga_pwr_gpio,
 
 	pr_debug("[%s]: pwr gpio dir = 0x%x\n", __func__, l_val);
 }
+#endif /* USE_FPGA_PWR_GPIO_CTRL */
 
 void msdc_fpga_pwr_init(void)
 {
+#ifdef USE_FPGA_PWR_GPIO_CTRL
 	if (fpga_pwr_gpio == NULL) {
 		fpga_pwr_gpio = ioremap(FPGA_PWR_GPIO, 8);
 		if (fpga_pwr_gpio == NULL) {
@@ -52,14 +65,16 @@ void msdc_fpga_pwr_init(void)
 			WARN_ON(1);
 		}
 		fpga_pwr_gpio_eo = fpga_pwr_gpio + 0x4;
-		pr_notice("FPGA PWR_GPIO, PWR_GPIO_EO address 0x%p, 0x%p\n",
+		pr_info("FPGA PWR_GPIO, PWR_GPIO_EO address 0x%p, 0x%p\n",
 			fpga_pwr_gpio, fpga_pwr_gpio_eo);
 	}
 	msdc_set_pwr_gpio_dir(fpga_pwr_gpio, fpga_pwr_gpio_eo);
+#endif /* USE_FPGA_PWR_GPIO_CTRL */
 }
 
 bool hwPowerOn_fpga(void)
 {
+#ifdef USE_FPGA_PWR_GPIO_CTRL
 	u16 l_val;
 	int boot_type;
 
@@ -76,12 +91,14 @@ bool hwPowerOn_fpga(void)
 
 	l_val = MSDC_READ16(PWR_GPIO);
 	pr_debug("[%s]: pwr gpio = 0x%x\n", __func__, l_val);
+#endif /* USE_FPGA_PWR_GPIO_CTRL */
 	return true;
 }
 EXPORT_SYMBOL(hwPowerOn_fpga);
 
 bool hwPowerSwitch_fpga(void)
 {
+#ifdef USE_FPGA_PWR_GPIO_CTRL
 	u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO);
@@ -91,16 +108,19 @@ bool hwPowerSwitch_fpga(void)
 
 	l_val = MSDC_READ16(PWR_GPIO);
 	pr_debug("[%s]: pwr gpio = 0x%x\n", __func__, l_val);
+#endif /* USE_FPGA_PWR_GPIO_CTRL */
 	return true;
 }
 EXPORT_SYMBOL(hwPowerSwitch_fpga);
 
 bool hwPowerDown_fpga(void)
 {
+#ifdef USE_FPGA_PWR_GPIO_CTRL
 	u16 l_val;
 	int boot_type;
 
 	l_val = MSDC_READ16(PWR_GPIO);
+
 	boot_type = get_boot_type();
 	if (boot_type == BOOTDEV_SDMMC) {
 		MSDC_WRITE16(PWR_GPIO,
@@ -110,8 +130,10 @@ bool hwPowerDown_fpga(void)
 			(l_val & ~(PWR_MASK_VOL_18 |
 				PWR_MASK_VOL_33 | PWR_MASK_CARD)));
 	}
+
 	l_val = MSDC_READ16(PWR_GPIO);
 	pr_debug("[%s]: pwr gpio = 0x%x\n", __func__, l_val);
+#endif /* USE_FPGA_PWR_GPIO_CTRL */
 	return true;
 }
 EXPORT_SYMBOL(hwPowerDown_fpga);
@@ -128,15 +150,6 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 {
 	if (on)
 		hwPowerSwitch_fpga();
-}
-
-void msdc_select_clksrc(struct msdc_host *host, int clksrc)
-{
-	host->hclk = msdc_get_hclk(host->id, clksrc);
-	host->hw->clk_src = clksrc;
-
-	pr_notice("[%s]: msdc%d select clk_src as %d(%dKHz)\n", __func__,
-		host->id, clksrc, host->hclk/1000);
 }
 
 /* do we need sync object or not */
